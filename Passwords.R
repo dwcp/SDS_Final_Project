@@ -3,3 +3,5 @@
 
 # read data on games taken from data.world
 games <- read.csv("https://query.data.world/s/4pach4x76ozrfmeavwsg6b4ja4qakj", header=TRUE, stringsAsFactors=FALSE);
+
+games <- subset(games, select = -c(QueryID, ResponseID))
