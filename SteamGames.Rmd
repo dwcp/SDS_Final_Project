@@ -189,5 +189,9 @@ col_names <- names(games)[20:54]
 games[col_names] <- lapply(games[col_names] , factor)
 games$ReleaseDate <- as.Date(games$ReleaseDate, format="%b %d %Y")
 which(games$ReleaseDate < as.Date("1800-01-01"))
-games %>% replace_with_na(replace = list(ReleaseDate = games$ReleaseDate < as.Date("1800-01-01")))
+
+delete <- games$ReleaseDate[which(games$ReleaseDate < as.Date("1800-01-01"))]
+games <- (games %>% replace_with_na(replace = list(ReleaseDate = delete)))
+
+
 ```
