@@ -274,6 +274,28 @@ The fourth component seems to describe newer multiplayer games. This is due to t
 We couldn't accurately determine the subset of the fifth component, so we decided to stop any further PCA analysis. 
 
 ## Tree
+```{r, echo=FALSE}
+games <- subset(games, select = -c(QueryName , ResponseName))
+n = nrow(games)
+n_train = floor(0.8*n)
+n_test = n - n_train
+train_cases = sample.int(n, size=n_train, replace=FALSE)
+
+y_all = games$PriceInitial
+x_all = model.matrix(~. - PriceInitial, data=games)
+
+y_train = y_all[train_cases]
+x_train = x_all[train_cases,]
+
+y_test = y_all[-train_cases]
+x_test = x_all[-train_cases,]
+
+```
+
+
+
+
+
 
 
 
