@@ -231,33 +231,49 @@ We changed the Website column to indicate whether or not a website was provided
     TRUE,  # if condition is met, put 1
     FALSE   # else put 0
 )
-games <- subset(games, select = -c(PriceFinal, SupportEmail, SupportURL))
+games <- subset(games, select = -c(PriceFinal, SupportEmail, SupportURL, IsFree, SteamSpyOwnersVariance, SteamSpyPlayersVariance))
 ```
 
-##Principle Components Analysis
+## Principle Components Analysis
 Using principal component analysis, we tried to reduce the dimensions of the data given to something that is easier to interpret. The components extracted using the PCA function are as follows:
-```{r, echo=FALSE}
+```{r, include=FALSE}
 # no model matrix for wine type because all variables are numerical
 set.seed(1)
 # Clustering using PCA
 # using all 56 variables
 games_model <- model.matrix(PriceInitial ~. - (QueryName + ResponseName) - 1, data = games)
-games.pca <- prcomp(games_model[,c(1:56)], center = TRUE, scale. = TRUE)
+games.pca <- prcomp(games_model[,c(1:54)], center = TRUE, scale. = TRUE)
 summary(games.pca)
 games_model
-games.pca$rotation
-
-
-
-
-#Attempt using non-factor stuff
-
-
+loadings = games.pca$rotation
 
 ```
 
+```{r, echo=FALSE}
+loadings[,1] %>% sort (decreasing = TRUE)
+```
 
+This first component explains the most variance out of all the components. The most significant coefficient indicates whether a Free version is avaiable. This makes sense because games that have a frere or trial version will get players hooked to purchase the full, more costly version. Release Date is another significant Coefficient, and suggests that newer games have higher prices. 
 
+```{r, echo=FALSE, R.options=list(max.print=10)}
+loadings[,2] %>% sort (decreasing = TRUE)
+```
+
+The second component seems indicative of PC games due to the highest component being lack of controller support. Thus, we can conclude this category contains older AAA high budget games due to the low emphasis on release date as well as a high emphasis on number of Publishers and Developers. 
+```{r, echo=FALSE, R.options=list(max.print=10)}
+loadings[,3] %>% sort (decreasing = TRUE)
+```
+The third component describes niche indie games. We can conclude this because of the positive emphasis on the coefficients of Single Plater Games, Casual Games, and Indie Games as well as a negative emphasis on Number of owners and Number of Players. 
+
+```{r, echo=FALSE, R.options=list(max.print=10)}
+loadings[,4] %>% sort (decreasing = TRUE)
+```
+
+The fourth component seems to describe newer multiplayer games. This is due to the high positive coefficients of Massive Multiplayer Genre, Release Date, and MMO Category.
+
+We couldn't accurately determine the subset of the fifth component, so we decided to stop any further PCA analysis. 
+
+## Tree
 
 
 
