@@ -11,7 +11,7 @@ library(lubridate)
 library(dplyr)
 library(naniar)
 
-games <- read.csv("./games-features.csv")
+games <- read.csv("./games-features.csv", header=TRUE, stringsAsFactors = FALSE)
 # games <- read.csv("https://query.data.world/s/4pach4x76ozrfmeavwsg6b4ja4qakj", header=TRUE, stringsAsFactors=FALSE);
 ```
 
@@ -192,6 +192,51 @@ which(games$ReleaseDate < as.Date("1800-01-01"))
 
 delete <- games$ReleaseDate[which(games$ReleaseDate < as.Date("1800-01-01"))]
 games <- (games %>% replace_with_na(replace = list(ReleaseDate = delete)))
-
-
 ```
+
+Now, we changed the Supported Languages column to contain the total number of supported languages, instead of the specific languages. 
+```{r, echo=FALSE}
+games$SupportedLanguages <- (str_remove(games$SupportedLanguages, "languages with full audio support"))
+games$SupportedLanguages <- (str_remove(games$SupportedLanguages, "Simplified "))
+games$SupportedLanguages <- (str_remove(games$SupportedLanguages, "Traditional "))
+games$SupportedLanguages <- lapply(strsplit(games$SupportedLanguages, " "), length ) 
+```
+
+Next, we modified the Detailed Description field to contain the number of words. 
+```{r, echo=FALSE}
+ lapply(strsplit(games$DetailedDescrip, " "), length )
+```
+
+We consolidated the Support Email and Support URL columns into a single column called Support, which holds a binary value based on whether a game has either a support email or a support URL.  
+```{r, echo=FALSE}
+ games$Support <- ifelse(
+    ( 
+        (games$SupportEmail != " ") |
+        (games$SupportURL != " ")
+    ),
+    TRUE,  # if condition is met, put 1
+    FALSE   # else put 0
+)
+```
+We changed the Website column to indicate whether or not a website was provided
+```{r, echo=FALSE}
+ games$Website <- ifelse(
+    ( 
+        (games$Website != "None")
+    ),
+    TRUE,  # if condition is met, put 1
+    FALSE   # else put 0
+)
+games <- subset(games, select = -c(SupportEmail, SupportURL))
+```
+
+##Principle Components Analysis
+
+
+
+
+
+
+
+
+
