@@ -200,11 +200,15 @@ games$SupportedLanguages <- (str_remove(games$SupportedLanguages, "languages wit
 games$SupportedLanguages <- (str_remove(games$SupportedLanguages, "Simplified "))
 games$SupportedLanguages <- (str_remove(games$SupportedLanguages, "Traditional "))
 games$SupportedLanguages <- lapply(strsplit(games$SupportedLanguages, " "), length ) 
+games$SupportedLanguages <- sapply(games$SupportedLanguages, unlist )
 ```
 
 Next, we modified the Detailed Description field to contain the number of words. 
 ```{r, echo=FALSE}
- lapply(strsplit(games$DetailedDescrip, " "), length )
+games$DetailedDescrip <- lapply(strsplit(games$DetailedDescrip, " "), length )
+games$DetailedDescrip <- sapply(games$DetailedDescrip, unlist )
+#typeof(games$DetailedDescrip[1])
+
 ```
 
 We consolidated the Support Email and Support URL columns into a single column called Support, which holds a binary value based on whether a game has either a support email or a support URL.  
@@ -227,11 +231,30 @@ We changed the Website column to indicate whether or not a website was provided
     TRUE,  # if condition is met, put 1
     FALSE   # else put 0
 )
-games <- subset(games, select = -c(SupportEmail, SupportURL))
+games <- subset(games, select = -c(PriceFinal, SupportEmail, SupportURL))
 ```
 
 ##Principle Components Analysis
+Using principal component analysis, we tried to reduce the dimensions of the data given to something that is easier to interpret. The components extracted using the PCA function are as follows:
+```{r, echo=FALSE}
+# no model matrix for wine type because all variables are numerical
+set.seed(1)
+# Clustering using PCA
+# using all 56 variables
+games_model <- model.matrix(PriceInitial ~. - (QueryName + ResponseName) - 1, data = games)
+games.pca <- prcomp(games_model[,c(1:56)], center = TRUE, scale. = TRUE)
+summary(games.pca)
+games_model
+games.pca$rotation
 
+
+
+
+#Attempt using non-factor stuff
+
+
+
+```
 
 
 
