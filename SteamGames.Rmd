@@ -2,7 +2,6 @@
 title: "Analysis of Predictors of Price and Popularity of Steam Games in 2016"
 output: pdf_document
 ---
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
@@ -15,10 +14,20 @@ library(randomForest)
 games <- read.csv("./games-features.csv", header=TRUE, stringsAsFactors = FALSE)
 # games <- read.csv("https://query.data.world/s/4pach4x76ozrfmeavwsg6b4ja4qakj", header=TRUE, stringsAsFactors=FALSE);
 ```
+## Abstract
+summarize your question, your methods, your results, and your main conclusions in a few hundred words or less.
 
 ## Introduction
+Introduce the question you’re trying to answer at a reasonable level of detail. Give background and motivation for why it’s important.
 
-This is a dataset on all steam games scraped from public Steam APIs and steamspy.com. The dataset comes from data.world at this url: https://data.world/craigkelly/steam-game-data. The dataset has 78 columns and includes things like price, descriptions and release date. According to the data on Github, the repository was created in Septembere 12, 2016 so we are assuming that the data also comes from the end of the year in 2016. The dataset has the following columns:
+Our goal is to discover interesting trends that allow us to predict how a game is priced and it's popularity after release. The price is divided into price initial and price final. We are going to use price initial as our metric to determine price and SteamSpyOwners as a metric to predict popularity. As avid gamers, we have long been interested in the games industry and wish to uncover any insights behind what makes some games more successful than others. This kind of analysis is significant for any indie developer so that they can better understand what kinds of games garner player interest as well as how much to charge for them. 
+
+## Methods
+Describe your data set and the methods you will use to ana- lyze it.
+
+This is a dataset on all steam games scraped from public Steam APIs and steamspy.com. The dataset comes from data.world at this url: https://data.world/craigkelly/steam-game-data. The dataset has 78 columns and includes things like price, descriptions and release date. According to the data on Github, the repository was created in Septembere 12, 2016 so we are assuming that the data also comes from the end of the year in 2016. 
+
+#### The dataset has the following columns:
 
 QueryID - (Integer) The original ID in idlist.csv
 
@@ -176,26 +185,38 @@ MacMinReqsText - (Textual) text of mac_requirements.minimum
 
 MacRecReqsText - (Textual) text of mac_requirements.recommended
 
-Our goal is to discover interesting trends that allow us to predict how a game is price and it's popularity after release. The price is divided into price initial and price final. We are going to use price initial as our metric to determine price and SteamSpyOwners as a metric to predict popularity.
+From the above, we can see that there is a lot of information that is hard to use to predict price. One example is the description. Unless we can extract some kind of metric from this, we won't be able to use it to predict price. As such, we choose to remove the following columns: QueryID, ResponseID, PCMinReqsText, PCRecReqsText, MacMinReqsText, MacRecReqsText, LinuxMinReqsText, LinuxRecReqsText, Reviews, LegalNotice, HeaderImage, DRMNotice, ExtUserAcctNotice, ShortDescrip, Background, AboutText, PriceCurrency. 
 
-## Data Cleanup
+#### At this point, we need to apply the following modifications in order to extract useful information out of the other columns:
 
-From the above, we can see that there is a lot of information that is hard to use to predict price. One example is the description. Unless we can extract some kind of metric from this, we won't be able to use it to predict price. As such, we choose to remove the following columns: QueryID, ResponseID, PCMinReqsText, PCRecReqsText, MacMinReqsText, MacRecReqsText, LinuxMinReqsText, LinuxRecReqsText, Reviews, LegalNotice, HeaderImage, DRMNotice, ExtUserAcctNotice, ShortDescrip, Background, AboutText, PriceCurrency.
+The ReleaseDate was transformed into the Date object type, with incorrect dates replaced with na.
 
-We then try and extract some useful information out of the other columns. We first need to transform all of the true/false columns to factors. We then need to change the date time format so that it can be easily read by R. 
+Supported Languages was modified to instead contain a numeric value of the total number of supported languages
+
+Full-length Descriptions was replaced with the total number of words in each description. 
+
+Support Email and Support URL were consolidated into a single binary variable called Support and marked TRUE if either URL or Email were provided. 
+
+Website was replaced with a binary variable indicating whether or not a website was provided.
+
+All existing true/false columns were transformed into factors. 
+
+#### We decided on the following methods for data analysis:
+Principal Component Analysis
+
+Random Forests
+
+Linear Regression
 
 ```{r, echo=FALSE}
 games <- subset(games, select = -c(QueryID, ResponseID, PCMinReqsText, PCRecReqsText, MacMinReqsText, MacRecReqsText, LinuxMinReqsText, LinuxRecReqsText, Reviews, LegalNotice, HeaderImage, DRMNotice, ExtUserAcctNotice, ShortDescrip, Background, AboutText, PriceCurrency))
 col_names <- names(games)[20:54]
 games[col_names] <- lapply(games[col_names] , factor)
 games$ReleaseDate <- as.Date(games$ReleaseDate, format="%b %d %Y")
-which(games$ReleaseDate < as.Date("1800-01-01"))
-
 delete <- games$ReleaseDate[which(games$ReleaseDate < as.Date("1800-01-01"))]
 games <- (games %>% replace_with_na(replace = list(ReleaseDate = delete)))
 ```
 
-Now, we changed the Supported Languages column to contain the total number of supported languages, instead of the specific languages. 
 ```{r, echo=FALSE}
 games$SupportedLanguages <- (str_remove(games$SupportedLanguages, "languages with full audio support"))
 games$SupportedLanguages <- (str_remove(games$SupportedLanguages, "Simplified "))
@@ -204,15 +225,13 @@ games$SupportedLanguages <- lapply(strsplit(games$SupportedLanguages, " "), leng
 games$SupportedLanguages <- sapply(games$SupportedLanguages, unlist )
 ```
 
-Next, we modified the Detailed Description field to contain the number of words. 
 ```{r, echo=FALSE}
 games$DetailedDescrip <- lapply(strsplit(games$DetailedDescrip, " "), length )
 games$DetailedDescrip <- sapply(games$DetailedDescrip, unlist )
 #typeof(games$DetailedDescrip[1])
 
 ```
-
-We consolidated the Support Email and Support URL columns into a single column called Support, which holds a binary value based on whether a game has either a support email or a support URL.  
+ 
 ```{r, echo=FALSE}
  games$Support <- ifelse(
     ( 
@@ -223,7 +242,7 @@ We consolidated the Support Email and Support URL columns into a single column c
     FALSE   # else put 0
 )
 ```
-We changed the Website column to indicate whether or not a website was provided
+
 ```{r, echo=FALSE}
  games$Website <- ifelse(
     ( 
@@ -234,8 +253,10 @@ We changed the Website column to indicate whether or not a website was provided
 )
 games <- subset(games, select = -c(PriceFinal, SupportEmail, SupportURL, IsFree, SteamSpyOwnersVariance, SteamSpyPlayersVariance))
 ```
+# Results:
+Tables, figures, and text that illustrate your findings. Keep the focus on the numbers here. You will interpret your results in the next section.
 
-## Principle Components Analysis
+### Principal Components Analysis
 Using principal component analysis, we tried to reduce the dimensions of the data given to something that is easier to interpret. The components extracted using the PCA function are as follows:
 ```{r, include=FALSE}
 # no model matrix for wine type because all variables are numerical
@@ -274,7 +295,7 @@ The fourth component seems to describe newer multiplayer games. This is due to t
 
 We couldn't accurately determine the subset of the fifth component, so we decided to stop any further PCA analysis. 
 
-## Tree
+### Tree
 ### Initial Price
 ```{r, echo=FALSE}
 games2 <- subset(games, select = -c(QueryName , ResponseName))
@@ -292,13 +313,13 @@ x_train = x_all[train_cases,]
 
 y_test = y_all[-train_cases]
 x_test = x_all[-train_cases,]
-
-forest1 = randomForest(x=x_train, y=y_train, xtest=x_test)
-yhat_test = (forest1$test)$predicted
-
-plot(yhat_test, y_test)
-plot(forest1) 
-varImpPlot(forest1)
+# 
+# forest1 = randomForest(x=x_train, y=y_train, xtest=x_test)
+# yhat_test = (forest1$test)$predicted
+# 
+# plot(yhat_test, y_test)
+# plot(forest1) 
+# varImpPlot(forest1)
 
 ```
 
@@ -320,14 +341,37 @@ x_train = x_all[train_cases,]
 y_test = y_all[-train_cases]
 x_test = x_all[-train_cases,]
 
-forest1 = randomForest(x=x_train, y=y_train, xtest=x_test)
-yhat_test = (forest1$test)$predicted
-
-plot(yhat_test, y_test)
-plot(forest1) 
-varImpPlot(forest1)
+# forest1 = randomForest(x=x_train, y=y_train, xtest=x_test)
+# yhat_test = (forest1$test)$predicted
+# 
+# plot(yhat_test, y_test)
+# plot(forest1) 
+# varImpPlot(forest1)
 
 ```
+
+## Linear Regression
+```{r, echo=FALSE}
+
+# lm_medium_metacritic = lm(Metacritic ~ ., data=games2)
+# coef(lm_medium_metacritic)
+# # cols <- names(subset(games, select = -c(Metacritic , ReleaseDate , SteamSpyPlayersEstimate , SteamSpyOwners , PriceInitial , RecommendationCount , DetailedDescrip , SupportedLanguages, QueryName, ResponseName)))
+# # cols <- c("MovieCount")
+# lm_step = step(lm_medium_metacritic)
+# lm_step
+
+```
+
+
+## Conclusion
+Interpret what you found. What are the main lessons we should take away from your report?
+
+
+
+
+
+
+
 
 
 
