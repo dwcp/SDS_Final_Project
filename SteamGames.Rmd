@@ -10,6 +10,7 @@ library(tidyverse)
 library(lubridate)
 library(dplyr)
 library(naniar)
+library(randomForest)
 
 games <- read.csv("./games-features.csv", header=TRUE, stringsAsFactors = FALSE)
 # games <- read.csv("https://query.data.world/s/4pach4x76ozrfmeavwsg6b4ja4qakj", header=TRUE, stringsAsFactors=FALSE);
@@ -274,15 +275,17 @@ The fourth component seems to describe newer multiplayer games. This is due to t
 We couldn't accurately determine the subset of the fifth component, so we decided to stop any further PCA analysis. 
 
 ## Tree
+### Initial Price
 ```{r, echo=FALSE}
-games <- subset(games, select = -c(QueryName , ResponseName))
-n = nrow(games)
+games2 <- subset(games, select = -c(QueryName , ResponseName))
+games2 <- na.omit(games2)
+n = nrow(games2)
 n_train = floor(0.8*n)
 n_test = n - n_train
 train_cases = sample.int(n, size=n_train, replace=FALSE)
 
-y_all = games$PriceInitial
-x_all = model.matrix(~. - PriceInitial, data=games)
+y_all = games2$PriceInitial
+x_all = model.matrix(~. - PriceInitial, data=games2)
 
 y_train = y_all[train_cases]
 x_train = x_all[train_cases,]
@@ -290,9 +293,41 @@ x_train = x_all[train_cases,]
 y_test = y_all[-train_cases]
 x_test = x_all[-train_cases,]
 
+forest1 = randomForest(x=x_train, y=y_train, xtest=x_test)
+yhat_test = (forest1$test)$predicted
+
+plot(yhat_test, y_test)
+plot(forest1) 
+varImpPlot(forest1)
+
 ```
 
+### Metacritic 
+```{r, echo=FALSE}
+games3 <- subset(games, select = -c(QueryName , ResponseName))
+games3 <- na.omit(games3)
+n = nrow(games3)
+n_train = floor(0.8*n)
+n_test = n - n_train
+train_cases = sample.int(n, size=n_train, replace=FALSE)
 
+y_all = games3$Metacritic
+x_all = model.matrix(~. - Metacritic, data=games3)
+
+y_train = y_all[train_cases]
+x_train = x_all[train_cases,]
+
+y_test = y_all[-train_cases]
+x_test = x_all[-train_cases,]
+
+forest1 = randomForest(x=x_train, y=y_train, xtest=x_test)
+yhat_test = (forest1$test)$predicted
+
+plot(yhat_test, y_test)
+plot(forest1) 
+varImpPlot(forest1)
+
+```
 
 
 
