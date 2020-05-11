@@ -12,184 +12,25 @@ library(naniar)
 library(randomForest)
 library(knitr)
 library(kableExtra)
+library(randomForestExplainer)
 
 games <- read.csv("./games-features.csv", header=TRUE, stringsAsFactors = FALSE)
 # games <- read.csv("https://query.data.world/s/4pach4x76ozrfmeavwsg6b4ja4qakj", header=TRUE, stringsAsFactors=FALSE);
 ```
 ## Abstract
-summarize your question, your methods, your results, and your main conclusions in a few hundred words or less.
+The objective of this paper is to determine the most significant predictors of a game's price and sales. Using Principle Component Analysis(PCA) and Random Forests, we were able to identify characteristics of games that predicted either a high price or greater sales. We discovered that having a good marketing strategy and catering to those who want a casual single player game will help boost sales and allow for a higher initial price.
 
 ## Introduction
-Introduce the question you’re trying to answer at a reasonable level of detail. Give background and motivation for why it’s important.
 
 Our goal is to discover interesting trends that allow us to predict how a game is priced and it's popularity after release. The price is divided into price initial and price final. We are going to use price initial as our metric to determine price and SteamSpyOwners as a metric to predict popularity. As avid gamers, we have long been interested in the games industry and wish to uncover any insights behind what makes some games more successful than others. This kind of analysis is significant for any indie developer so that they can better understand what kinds of games garner player interest as well as how much to charge for them. 
 
 ## Methods
-Describe your data set and the methods you will use to ana- lyze it.
 
 This is a dataset on all steam games scraped from public Steam APIs and steamspy.com. The dataset comes from data.world at this url: https://data.world/craigkelly/steam-game-data. The dataset has 78 columns and includes things like price, descriptions and release date. According to the data on Github, the repository was created in Septembere 12, 2016 so we are assuming that the data also comes from the end of the year in 2016. 
 
-#### The dataset has the following columns:
-
-QueryID - (Integer) The original ID in idlist.csv
-
-ResponseID - (Integer) The ID returned in the Steam response (should equal QueryID)
-
-QueryName - (Text) The original name in idlist.csv
-
-ResponseName - (Text) The name returned in the Steam response (should equal QueryName)
-
-ReleaseDate - (Text) Appears to the be the initial release date for the game
-
-RequiredAge - (Integer) list named required_age in JSON
-
-DemoCount - (TextualCount) list named demos in JSON
-
-DeveloperCount - (TextualCount) list named developers in JSON
-
-DLCCount - (TextualCount) list named dlc in JSON
-
-Metacritic - (Integer) numeric score from metacritic object in JSON
-
-MovieCount - (TextualCount) list named movies in JSON (used object id for unique count)
-
-PackageCount - (TextualCount) list named packages in JSON
-
-RecommendationCount - (Integer) from recommendations.total in JSON
-
-PublisherCount - (TextualCount) list named publishers in JSON
-
-ScreenshotCount - (TextualCount) list named screenshots in JSON
-
-AchievementCount - (Integer) achievements.total in JSON
-
-AchievementHighlightedCount - (TextualCount) for achievements.highlighted in JSON
-
-ControllerSupport - (Boolean) True if controller_support was full
-
-IsFree - (Boolean) is_free in JSON
-
-FreeVerAvail - (Boolean) True if is_free_license is True in package_groups list
-
-PurchaseAvail - (Boolean) True if price_in_cents_with_discount greater than 0 in package_groups list
-
-SubscriptionAvail - (Boolean) True if is_recurring_subscription is True in package_groups
-
-PlatformWindows - (Boolean) True if platforms.windows is True
-
-PlatformLinux - (Boolean) True if platforms.linux is True
-
-PlatformMac - (Boolean) True if platforms.mac is True
-
-PCReqsHaveMin - (Boolean) True if pc_requirements.minimum is non-empty string
-
-PCReqsHaveRec - (Boolean) True if pc_requirements.recommended is non-empty string
-
-LinuxReqsHaveMin - (Boolean) True if linux_requirements.minimum is non-empty string
-
-LinuxReqsHaveRec - (Boolean) True if linux_requirements.recommended is non-empty string
-
-MacReqsHaveMin - (Boolean) True if mac_requirements.minimum is non-empty string
-
-MacReqsHaveRec - (Boolean) True if mac_requirements.recommended is non-empty string
-
-CategorySinglePlayer - (Boolean) True if for any i, categories[i].description is "single-player"
-
-CategoryMultiplayer - (Boolean) True if for any i, categories[i].description is one of: "cross-platform multiplayer", "local multi-player", "multi-player", "online multi-player", "shared/split screen"
-
-CategoryCoop - (Boolean) True if for any i, categories[i].description is one of: "co-op", "local co-op", "online co-op"
-
-CategoryMMO - (Boolean) True if for any i, categories[i].description is "mmo"
-
-CategoryInAppPurchase - (Boolean) True if for any i, categories[i].description is "in-app purchases"
-
-CategoryIncludeSrcSDK - (Boolean) True if for any i, categories[i].description is "includes source sdk"
-
-CategoryIncludeLevelEditor - (Boolean) True if for any i, categories[i].description is "includes level editor"
-
-CategoryVRSupport - (Boolean) True if for any i, categories[i].description is "vr support"
-
-GenreIsNonGame - (Boolean) True if for any i, genres[i].description is one of: "utilities", "design & illustration", "animation & modeling", "software training", "education", "audio production", "video production", "web publishing", "photo editing", "accounting"
-
-GenreIsIndie - (Boolean) True if for any i, genres[i].description is "indie"
-
-GenreIsAction - (Boolean) True if for any i, genres[i].description is "action"
-
-GenreIsAdventure - (Boolean) True if for any i, genres[i].description is "adventure"
-
-GenreIsCasual - (Boolean) True if for any i, genres[i].description is "casual"
-
-GenreIsStrategy - (Boolean) True if for any i, genres[i].description is "strategy"
-
-GenreIsRPG - (Boolean) True if for any i, genres[i].description is "rpg"
-
-GenreIsSimulation - (Boolean) True if for any i, genres[i].description is "simulation"
-
-GenreIsEarlyAccess - (Boolean) True if for any i, genres[i].description is "early access"
-
-GenreIsFreeToPlay - (Boolean) True if for any i, genres[i].description is "free to play"
-
-GenreIsSports - (Boolean) True if for any i, genres[i].description is "sports"
-
-GenreIsRacing - (Boolean) True if for any i, genres[i].description is "racing"
-
-GenreIsMassivelyMultiplayer - (Boolean) True if for any i, genres[i].description is "massively multiplayer"
-
-PriceCurrency - (Text) price_overview.currency in JSON
-
-PriceInitial - (Float) price_overview.initial in JSON, divided by 100.0 to converts cents to currency
-
-PriceFinal - (Float) price_overview.final in JSON, divided by 100.0 to converts cents to currency
-
-SteamSpyOwners - (steamspy.com) total owners, which includes free weekend trials and other possibly spurious numbers.
-
-SteamSpyOwnersVariance - (steamspy.com) total owners, which includes free weekend trials and other possibly spurious numbers. Note that this is not technically variance: according to steamspy.com, "the real number... lies somewhere on... [value +/- variance]"
-
-SteamSpyPlayersEstimate - (steamspy.com) best estimate of total number of people who have played the game since March 2009
-
-SteamSpyPlayersVariance - (steamspy.com) errors bounds on SteamSpyPlayersEstimate. Note that this is not technically variance: according to steamspy.com, "the real number... lies somewhere on... [value +/- variance]"
-
-SupportEmail - (Textual) support_info.email in JSON
-
-SupportURL - (Textual) support_info.url in JSON
-
-AboutText - (Textual) about_the_game in JSON
-
-Background - (Textual) background in JSON
-
-ShortDescrip - (Textual) short_description in JSON
-
-DetailedDescrip - (Textual) detailed_description in JSON
-
-DRMNotice - (Textual) drm_notice in JSON
-
-ExtUserAcctNotice - (Textual) ext_user_account_notice in JSON
-
-HeaderImage - (Textual) header_image in JSON
-
-LegalNotice - (Textual) legal_notice in JSON
-
-Reviews - (Textual) reviews in JSON
-
-SupportedLanguages - (Textual) supported_languages in JSON
-
-Website - (Textual) website in JSON
-
-PCMinReqsText - (Textual) text of pc_requirements.minimum
-
-PCRecReqsText - (Textual) text of pc_requirements.recommended
-
-LinuxMinReqsText - (Textual) text of linux_requirements.minimum
-
-LinuxRecReqsText - (Textual) text of linux_requirements.recommended
-
-MacMinReqsText - (Textual) text of mac_requirements.minimum
-
-MacRecReqsText - (Textual) text of mac_requirements.recommended
-
 From the above, we can see that there is a lot of information that is hard to use to predict price. One example is the description. Unless we can extract some kind of metric from this, we won't be able to use it to predict price. As such, we choose to remove the following columns: QueryID, ResponseID, PCMinReqsText, PCRecReqsText, MacMinReqsText, MacRecReqsText, LinuxMinReqsText, LinuxRecReqsText, Reviews, LegalNotice, HeaderImage, DRMNotice, ExtUserAcctNotice, ShortDescrip, Background, AboutText, PriceCurrency. 
 
-#### At this point, we need to apply the following modifications in order to extract useful information out of the other columns:
+### At this point, we need to apply the following modifications in order to extract useful information out of the other columns:
 
 The ReleaseDate was transformed into the Date object type, with incorrect dates replaced with na.
 
@@ -203,10 +44,14 @@ Website was replaced with a binary variable indicating whether or not a website 
 
 All existing true/false columns were transformed into factors. 
 
-#### We decided on the following methods for data analysis:
-Principal Component Analysis
+### We decided on the following methods for data analysis:
+Principal Component Analysis:
+
+Due to the high dimensionality of the dataset, we decided that it would be helpful to reduce it to its most significant components so that we could observe any trends that would help to describe the initial price.
 
 Random Forests
+
+
 
 Linear Regression
 
@@ -256,10 +101,13 @@ games$DetailedDescrip <- sapply(games$DetailedDescrip, unlist )
 games <- subset(games, select = -c(PriceFinal, SupportEmail, SupportURL, IsFree, SteamSpyOwnersVariance, SteamSpyPlayersVariance))
 ```
 # Results:
-Tables, figures, and text that illustrate your findings. Keep the focus on the numbers here. You will interpret your results in the next section.
 
-### Principal Components Analysis
+## Principal Components Analysis
+
 Using principal component analysis, we tried to reduce the dimensions of the data given to something that is easier to interpret. The components extracted using the PCA function are as follows:
+
+### Initial Price
+
 ```{r, include=FALSE}
 # no model matrix for wine type because all variables are numerical
 set.seed(1)
@@ -272,31 +120,70 @@ games_model
 loadings = games.pca$rotation
 
 ```
-Figure 1
-```{r, echo=FALSE}
-
-knitr::kable(
-  loadings[,1] %>% sort (decreasing = TRUE) , col.names = c("Coefficient")
-)
+Table 1
+```{r, echo=FALSE, R.options=list(max.print=10)}
+loadings[,1] %>% sort (decreasing = TRUE)
 ```
-Figure 2
+Table 2
 ```{r, echo=FALSE, R.options=list(max.print=10)}
 loadings[,2] %>% sort (decreasing = TRUE)
 ```
-Figure 3
+Table 3
 ```{r, echo=FALSE, R.options=list(max.print=10)}
 loadings[,3] %>% sort (decreasing = TRUE)
 ```
-Figure 4
+Table 4
 ```{r, echo=FALSE, R.options=list(max.print=10)}
 loadings[,4] %>% sort (decreasing = TRUE)
 ```
 
+### Sales
 
-### Tree
-#### Initial Price
-```{r, echo=FALSE}
-games2 <- subset(games, select = -c(QueryName , ResponseName))
+```{r, include=FALSE}
+set.seed(1)
+# Clustering using PCA
+# using all 56 variables
+games_model_owners <- model.matrix(SteamSpyOwners ~. - (QueryName + ResponseName) - 1, data = games)
+games_owners.pca <- prcomp(games_model_owners[,c(1:54)], center = TRUE, scale. = TRUE)
+summary(games_owners.pca)
+loadings = games_owners.pca$rotation
+
+```
+Table 5
+```{r, echo=FALSE, R.options=list(max.print=10)}
+
+# Games that are multiplatform, published by an established studio, and have detailed and rich media on the steam page are more likely to have more owners
+
+loadings[,1] %>% sort (decreasing = TRUE)
+```
+Table 6
+```{r, echo=FALSE, R.options=list(max.print=10)}
+
+# Newer games on non mainstream platforms, like indie games
+
+loadings[,2] %>% sort (decreasing = TRUE)
+```
+Table 7
+```{r, echo=FALSE, R.options=list(max.print=10)}
+
+# Multiplayer free to play games
+
+loadings[,3] %>% sort (decreasing = TRUE)
+```
+Table 8
+```{r, echo=FALSE, R.options=list(max.print=10)}
+
+# Highly reviewed games with a high price and older targeted audience
+
+loadings[,4] %>% sort (decreasing = TRUE)
+```
+
+
+### Random Forest
+
+
+```{r, echo=FALSE, fig.width=6, fig.height=6.18}
+games2 <- subset(games, select = -c(QueryName , ResponseName, GenreIsNonGame))
 games2 <- na.omit(games2)
 n = nrow(games2)
 n_train = floor(0.8*n)
@@ -311,27 +198,34 @@ x_train = x_all[train_cases,]
 
 y_test = y_all[-train_cases]
 x_test = x_all[-train_cases,]
-# 
+
 # forest1 = randomForest(x=x_train, y=y_train, xtest=x_test)
-# yhat_test = (forest1$test)$predicted
-# 
+# save(forest1, file = "forest1.rda")
+
+load(file = "forest1.rda")
+
+yhat_test = (forest1$test)$predicted
+
 # plot(yhat_test, y_test)
-# plot(forest1) 
-# varImpPlot(forest1)
+# plot(forest1)
+varImpPlot(forest1, main="Figure 1")
 
 ```
 
-#### Metacritic 
-```{r, echo=FALSE}
-games3 <- subset(games, select = -c(QueryName , ResponseName))
+#### Initial Price
+
+This is the plot of the importance of each feature in terms of predicting initial price.
+
+```{r, echo=FALSE, fig.width=6, fig.height=6.18}
+games3 <- subset(games, select = -c(QueryName , ResponseName, SteamSpyPlayersEstimate))
 games3 <- na.omit(games3)
 n = nrow(games3)
 n_train = floor(0.8*n)
 n_test = n - n_train
 train_cases = sample.int(n, size=n_train, replace=FALSE)
 
-y_all = games3$Metacritic
-x_all = model.matrix(~. - Metacritic, data=games3)
+y_all = games3$SteamSpyOwners
+x_all = model.matrix(~. - SteamSpyOwners, data=games3)
 
 y_train = y_all[train_cases]
 x_train = x_all[train_cases,]
@@ -339,48 +233,49 @@ x_train = x_all[train_cases,]
 y_test = y_all[-train_cases]
 x_test = x_all[-train_cases,]
 
-# forest1 = randomForest(x=x_train, y=y_train, xtest=x_test)
-# yhat_test = (forest1$test)$predicted
-# 
-# plot(yhat_test, y_test)
-# plot(forest1) 
-# varImpPlot(forest1)
+# forest2 = randomForest(x=x_train, y=y_train, xtest=x_test)
+# save(forest2, file = "forest2.rda")
+
+load(file = "forest2.rda")
+
+yhat_test_2 = (forest2$test)$predicted
+
+# plot(yhat_test_2, y_test)
+# plot(forest2)
+varImpPlot(forest2, main="Figure 2")
 
 ```
 
-### Linear Regression
-```{r, echo=FALSE}
+#### Sales 
 
-# lm_medium_metacritic = lm(Metacritic ~ ., data=games2)
-# coef(lm_medium_metacritic)
-# # cols <- names(subset(games, select = -c(Metacritic , ReleaseDate , SteamSpyPlayersEstimate , SteamSpyOwners , PriceInitial , RecommendationCount , DetailedDescrip , SupportedLanguages, QueryName, ResponseName)))
-# # cols <- c("MovieCount")
-# lm_step = step(lm_medium_metacritic)
-# lm_step
-
-```
-
+This is the plot of the importance of each feature in terms of predicting sales.
 
 ## Conclusion
-Interpret what you found. What are the main lessons we should take away from your report?
 
 ### PCA 
-This first component (Figure 1) explains the most variance out of all the components. The most significant coefficient indicates whether a Free version is avaiable. This makes sense because games that have a frere or trial version will get players hooked to purchase the full, more costly version. Release Date is another significant Coefficient, and suggests that newer games have higher prices. 
-The second component (Figure 2) seems indicative of PC games due to the highest component being lack of controller support. Thus, we can conclude this category contains older AAA high budget games due to the low emphasis on release date as well as a high emphasis on number of Publishers and Developers. 
-The third component (Figure 3) describes niche indie games. We can conclude this because of the positive emphasis on the coefficients of Single Plater Games, Casual Games, and Indie Games as well as a negative emphasis on Number of owners and Number of Players. 
-The fourth component (Figure 4) seems to describe newer multiplayer games. This is due to the high positive coefficients of Massive Multiplayer Genre, Release Date, and MMO Category.
+
+#### Initial Price
+This first component (Table 1) explains the most variance out of all the components. The most significant coefficient indicates whether a Free version is avaiable. This makes sense because games that have a free or trial version will get players hooked to purchase the full, more costly version. Release Date is another significant Coefficient, and suggests that newer games have higher prices. 
+The second component (Table 2) seems indicative of PC games due to the highest component being lack of controller support. Thus, we can conclude this category contains older AAA high budget games due to the low emphasis on release date as well as a high emphasis on number of Publishers and Developers. 
+The third component (Table 3) describes niche indie games. We can conclude this because of the positive emphasis on the coefficients of Single Player Games, Casual Games, and Indie Games as well as a negative emphasis on Number of owners and Number of Players. 
+The fourth component (Table 4) seems to describe newer multiplayer games. This is due to the high positive coefficients of Massive Multiplayer Genre, Release Date, and MMO Category.
 
 We couldn't accurately determine the subset of the fifth component, so we decided to stop any further PCA analysis. 
 
+#### Sales
+Similar to above, we were able to glean some information from the first 4 principal components. The first component (Table 5) shows that the most prominent group of users buy games that have a reputable studio behind them, have detailed and rich media on their homepage and are available on many platforms. The second component (Table 6) takes into account a group on the opposite spectrum, who buys games that aren't available on mainstream platforms like indie games. Component 3 (Table 7) describes massively multiplayer online games that are free to play, something that comprises a large section of the market. Finally component 4 (Table 8) shows that a large portion of the market is older gamers influenced by reviews and the pricing of the games.
 
+### Random Forest
 
+#### Initial Price
+From Figure 1 we can see a large difference between the top 2 features and the rest of the graph. The description and release date have the most impact on the accuracy of the random forest, showing that how much effort a company puts into marketing and the when the game was published matters the most when a company is pricing its products.
 
+#### Sales
+As for Figure 2, a similar difference can be seen between the top 3 features and the rest of the graph. However, there is an even larger difference within the top 3, with recommendations shooting past the rest of the features by a large margin. This shows that most people take into account what other people are saying about a game when they are considering what to purchase. They then look at when the game was published and what reviewers are saying about the product.
 
+#### Summary
 
+From our perspective as future game developers, we can identify areas that would allow us to determine the best price and predict where we would get the highest amount of profit. From the PCA analysis, we determined that fleshing out the website and adding vivid descriptions and multimedia will allow us to attract as many players as possible. In addition, making a casual single player game will make it more likely for players to tolerate a higher price.
 
-
-
-
-
-
+From the Random Forest analysis, we can see similar results. In order to price our product higher, we need to ensure that our marketing campaign generates enough interest to justify the price. In order to attract as many players as possible, the game needs to be released to reviewers and perhaps a large beta test player pool needs to be generated so that people can spread word of the game around by mouth.
 
